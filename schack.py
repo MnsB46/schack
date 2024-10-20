@@ -1,7 +1,7 @@
 färg_katalog= {0: "□", 1: "■",}
 sträng_till_kolumn = {"a":0, "b":1, "c":2, "d":3, "e":4, "f":5, "g":6, "h":7}
 sträng_till_kolumn_reverse = {v: k for k, v in sträng_till_kolumn.items()}
-sträng_till_rad = {"1":7, "2":6, "3":5, "4":4, "5":3, "6":2, "7":1, "8":0}
+sträng_till_rad = {'1':7, '2':6, '3':5, '4':4, '5':3, '6':2, '7':1, '8':0, ' ':8}
 sträng_till_rad_reverse = {v: k for k, v in sträng_till_rad.items()}
 
 class piece:
@@ -12,6 +12,7 @@ class piece:
         self.x = x
         self.y = y
         self.beteende_lista = []
+        self.moves = 0
     
     def lägg_till_flytt_beteende(self, flytt_graf):
         nytt_flytt_beteende = FlyttBeteende(self, flytt_graf)
@@ -186,8 +187,8 @@ def placera_standard_pjäser_i_shack_position_matris(matris):
     matris[0][6].pjäs = skapa_häst("♘", "svart", 0, 6)
     matris[0][2].pjäs = skapa_löpare("♗", "svart", 0, 2)
     matris[0][5].pjäs = skapa_löpare("♗", "svart", 0, 5)
-    matris[0][3].pjäs = skapa_kung("♔", "svart", 0, 3)
-    matris[0][4].pjäs = skapa_drottning("♕", "svart", 0, 4)
+    matris[0][4].pjäs = skapa_kung("♔", "svart", 0, 4)
+    matris[0][3].pjäs = skapa_drottning("♕", "svart", 0, 3)
     
     matris[7][0].pjäs = skapa_torn("♜", "vit", 7, 0)
     matris[7][7].pjäs = skapa_torn("♜", "vit", 7, 7)
@@ -195,8 +196,8 @@ def placera_standard_pjäser_i_shack_position_matris(matris):
     matris[7][6].pjäs = skapa_häst("♞", "vit", 7, 6)
     matris[7][2].pjäs = skapa_löpare("♝", "vit", 7, 2)
     matris[7][5].pjäs = skapa_löpare("♝", "vit", 7, 5)
-    matris[7][3].pjäs = skapa_kung("♚", "vit", 7, 3)
-    matris[7][4].pjäs = skapa_drottning("♛", "vit", 7, 4)
+    matris[7][4].pjäs = skapa_kung("♚", "vit", 7, 4)
+    matris[7][3].pjäs = skapa_drottning("♛", "vit", 7, 3)
     return matris
 
 def rita_schack_bräde(matris):
@@ -211,6 +212,7 @@ def rita_schack_bräde(matris):
 
 def flytta_pjäs(matris, fx, fy, tx, ty):
     pjäs_i_handen = matris[fx][fy].pjäs
+    pjäs_i_handen.moves += 1
     pjäs_i_handen.x = tx
     pjäs_i_handen.y = ty
     matris[fx][fy].pjäs = None
@@ -225,16 +227,27 @@ def konvertera_till_notation(tup):
 schackbrädet = skapa_standard_schackbräde_matris()
 rita_schack_bräde(schackbrädet)
 
-print("Vilken pjäs vill du flytta? Skriv x, y")
-user_input = input()
-x = sträng_till_rad[user_input[-1]]
-y = sträng_till_kolumn[user_input[0]]
-if är_drag_på_schackbrädet(x, y) == True:
-    if schackbrädet[x][y].pjäs == None:
-        print("Ingen pjäs på denna ruta")
+match_pågår = True
+while match_pågår:
+    print("Vilken pjäs vill du flytta?")
+    user_input = input()
+    x1 = sträng_till_rad[user_input[1]]
+    y1 = sträng_till_kolumn[user_input[0]]
+    if är_drag_på_schackbrädet(x1, y1) == True:
+        if schackbrädet[x1][y1].pjäs == None:
+            print("Ingen pjäs på denna ruta")
+        else:
+            print("Följande är möjliga drag")
+            for e in schackbrädet[x1][y1].pjäs.ge_lista_på_alla_möjliga_flyttar():
+                print(konvertera_till_notation(e))
+            print("Var vill du flytta pjäsen?")
+            flytta_till_ruta = input()
+            x2 = sträng_till_rad[flytta_till_ruta[1]]
+            y2 = sträng_till_kolumn[flytta_till_ruta[0]]
+            if (x2, y2) in schackbrädet[x1][y1].pjäs.ge_lista_på_alla_möjliga_flyttar():
+                flytta_pjäs(schackbrädet, x1, y1, x2, y2)
+            else:
+                print("Inte ett giltigt drag")
     else:
-        print("Följande är möjliga drag")
-        for e in schackbrädet[x][y].pjäs.ge_lista_på_alla_möjliga_flyttar():
-            print(konvertera_till_notation(e))
-else:
-    print("ruta är inte på schackbrädet")
+        print("ruta är inte på schackbrädet")
+    rita_schack_bräde(schackbrädet)
