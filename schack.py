@@ -11,8 +11,6 @@ en_passant = ()
 en_passant_remove = ()
 rokad_positiv = ()
 rokad_negativ = ()
-position_vit_kung = (7, 4)
-position_svart_kung = (0, 4)
 
 class piece:
     def __init__(self, namn, karaktär, color, x, y):
@@ -28,13 +26,12 @@ class piece:
         nytt_flytt_beteende = FlyttBeteende(self, flytt_graf, krav)
         self.beteende_lista.append(nytt_flytt_beteende)
     
-    def ge_lista_på_alla_möjliga_flyttar(self):
+    def ge_lista_på_alla_möjliga_flyttar(self, matris):
         alla_möjliga_flyttar = []
         for beteende in self.beteende_lista:
-            for e in beteende.ge_lista_på_möjliga_flyttar(self.x, self.y):
+            for e in beteende.ge_lista_på_möjliga_flyttar(self.x, self.y, matris):
                 alla_möjliga_flyttar.append(e)
         return alla_möjliga_flyttar
-
 
 class SchackPosition:
     def __init__(self, färg=0, pjäs=None):
@@ -70,7 +67,7 @@ class FlyttBeteende:
     def __str__(self):
         return f"Person(namn={self.flytt_graf})"
     
-    def ge_lista_på_möjliga_flyttar(self, x, y):
+    def ge_lista_på_möjliga_flyttar(self, x, y, matris):
         global bonde_kan_flytta_två_steg_hit
         global bonde_har_flyttat_två_steg_hit
         global en_passant
@@ -82,25 +79,25 @@ class FlyttBeteende:
             steg = 0
             x1 = x + (self.flytt_graf.x)
             y1 = y + (self.flytt_graf.y)
-            kolliderat_med_samma_färg = kolliderar_med_pjäs_av_samma_färg(x1, y1, self.pjäsFörälder.color)
+            kolliderat_med_samma_färg = kolliderar_med_pjäs_av_samma_färg(x1, y1, self.pjäsFörälder.color, matris)
             tagit_pjäs = False
             while är_drag_på_schackbrädet(x1, y1) and kolliderat_med_samma_färg == False and steg < self.flytt_graf.steg and tagit_pjäs == False:
                 lista_med_flyttar.append((x1, y1))
-                if tagit_pjäs_funktion(x1, y1, self.pjäsFörälder.color):
+                if tagit_pjäs_funktion(x1, y1, self.pjäsFörälder.color, matris):
                     break
                 x1 += (self.flytt_graf.x)
                 y1 += (self.flytt_graf.y)
-                kolliderat_med_samma_färg = kolliderar_med_pjäs_av_samma_färg(x1, y1, self.pjäsFörälder.color)
+                kolliderat_med_samma_färg = kolliderar_med_pjäs_av_samma_färg(x1, y1, self.pjäsFörälder.color, matris)
                 steg += 1
         elif self.krav_funktion == "Bonde_ett_steg":
-            if schackbrädet[x+self.flytt_graf.x][y].pjäs == None:
+            if matris[x+self.flytt_graf.x][y].pjäs == None:
                 lista_med_flyttar.append((x+self.flytt_graf.x, y))
         elif self.krav_funktion == "Bonde_två_steg":
-            if schackbrädet[x+int(((self.flytt_graf.x)/2))][y].pjäs == None and schackbrädet[x+self.flytt_graf.x][y].pjäs == None and self.pjäsFörälder.moves == 0:
+            if matris[x+int(((self.flytt_graf.x)/2))][y].pjäs == None and matris[x+self.flytt_graf.x][y].pjäs == None and self.pjäsFörälder.moves == 0:
                 lista_med_flyttar.append((x+self.flytt_graf.x, y))
                 bonde_kan_flytta_två_steg_hit = (x+self.flytt_graf.x, y)
         elif self.krav_funktion == "Bonde_ta_pjäs":
-            if är_drag_på_schackbrädet(x+self.flytt_graf.x, y+self.flytt_graf.y) and schackbrädet[x+self.flytt_graf.x][y+self.flytt_graf.y].pjäs != None and schackbrädet[x+self.flytt_graf.x][y+self.flytt_graf.y].pjäs.color != self.pjäsFörälder.color:
+            if är_drag_på_schackbrädet(x+self.flytt_graf.x, y+self.flytt_graf.y) and matris[x+self.flytt_graf.x][y+self.flytt_graf.y].pjäs != None and matris[x+self.flytt_graf.x][y+self.flytt_graf.y].pjäs.color != self.pjäsFörälder.color:
                 lista_med_flyttar.append((x+self.flytt_graf.x, y+self.flytt_graf.y))
         elif self.krav_funktion == "En_passant":
             if bonde_har_flyttat_två_steg_hit == (x, y+self.flytt_graf.y):
@@ -108,15 +105,14 @@ class FlyttBeteende:
                 en_passant = (x+self.flytt_graf.x, y+self.flytt_graf.y)
                 en_passant_remove = (x, y+self.flytt_graf.y)
         elif self.krav_funktion == "rokad_positiv":
-            if self.pjäsFörälder.moves == 0 and schackbrädet[x][y+3].pjäs.moves == 0 and schackbrädet[x][y+2].pjäs == None and schackbrädet[x][y+1].pjäs == None:
+            if self.pjäsFörälder.moves == 0 and matris[x][y+3].pjäs.moves == 0 and matris[x][y+2].pjäs == None and matris[x][y+1].pjäs == None:
                 lista_med_flyttar.append((x+self.flytt_graf.x, y+self.flytt_graf.y))
                 rokad_positiv = (x+self.flytt_graf.x, y+self.flytt_graf.y)
         elif self.krav_funktion == "rokad_negativ":
-            if self.pjäsFörälder.moves == 0 and schackbrädet[x][y-4].pjäs.moves == 0 and schackbrädet[x][y-3].pjäs == None and schackbrädet[x][y-2].pjäs == None and schackbrädet[x][y-1].pjäs == None:
+            if self.pjäsFörälder.moves == 0 and matris[x][y-4].pjäs.moves == 0 and matris[x][y-3].pjäs == None and matris[x][y-2].pjäs == None and matris[x][y-1].pjäs == None:
                 lista_med_flyttar.append((x+self.flytt_graf.x, y+self.flytt_graf.y))
                 rokad_negativ = (x+self.flytt_graf.x, y+self.flytt_graf.y)
         return lista_med_flyttar
-
 
 def är_drag_på_schackbrädet(x, y):
     if x < 0:
@@ -130,21 +126,21 @@ def är_drag_på_schackbrädet(x, y):
     else:
         return True
 
-def kolliderar_med_pjäs_av_samma_färg(x, y, färg):
+def kolliderar_med_pjäs_av_samma_färg(x, y, färg, matris):
     if är_drag_på_schackbrädet(x, y):
-        if schackbrädet[x][y].pjäs == None:
+        if matris[x][y].pjäs == None:
             return False
-        elif schackbrädet[x][y].pjäs.color == färg:
+        elif matris[x][y].pjäs.color == färg:
             return True
         else:
             return False
     else:
         return False
 
-def tagit_pjäs_funktion(x, y, färg):
-    if schackbrädet[x][y].pjäs == None:
+def tagit_pjäs_funktion(x, y, färg, matris):
+    if matris[x][y].pjäs == None:
         return False
-    elif schackbrädet[x][y].pjäs.color != färg:
+    elif matris[x][y].pjäs.color != färg:
         return True
     else:
         return False
@@ -283,7 +279,7 @@ def är_det_schack(matris, färg):
         for e in matris[i]:
             if e.pjäs != None:
                 if e.pjäs.color != färg:
-                    drag = e.pjäs.ge_lista_på_alla_möjliga_flyttar()
+                    drag = e.pjäs.ge_lista_på_alla_möjliga_flyttar(matris)
                     for j in drag:
                         if matris[j[0]][j[1]].pjäs != None and matris[j[0]][j[1]].pjäs.namn == "Kung":
                             return True
@@ -296,7 +292,7 @@ rita_schack_bräde(schackbrädet)
 match_pågår = True
 vems_tur = "vit"
 while match_pågår:
-    print("Vilken pjäs vill du flytta?")
+    print(vems_tur + " vilken pjäs vill du flytta?")
     user_input = input()
     x1 = sträng_till_rad[user_input[1]]
     y1 = sträng_till_kolumn[user_input[0]]
@@ -305,11 +301,11 @@ while match_pågår:
             print("Ingen pjäs på denna ruta")
         else:
             if schackbrädet[x1][y1].pjäs.color == vems_tur:
-                if len(schackbrädet[x1][y1].pjäs.ge_lista_på_alla_möjliga_flyttar()) == 0:
+                if len(schackbrädet[x1][y1].pjäs.ge_lista_på_alla_möjliga_flyttar(schackbrädet)) == 0:
                     print("Inga möjliga drag för denna pjäs")
                 else:
                     print("Följande är möjliga drag")
-                    drag = schackbrädet[x1][y1].pjäs.ge_lista_på_alla_möjliga_flyttar()
+                    drag = schackbrädet[x1][y1].pjäs.ge_lista_på_alla_möjliga_flyttar(schackbrädet)
                     for e in drag:
                         print(konvertera_till_notation(e))
                     print("Var vill du flytta pjäsen?")
@@ -318,8 +314,9 @@ while match_pågår:
                     y2 = sträng_till_kolumn[flytta_till_ruta[0]]
                     schackbrädet_testa_schack = copy.deepcopy(schackbrädet)
                     flytta_pjäs(schackbrädet_testa_schack, x1, y1, x2, y2)
-                    if är_det_schack(schackbrädet_testa_schack, "vit"):
+                    if är_det_schack(schackbrädet_testa_schack, vems_tur):
                         print("ogiltigt drag, det är schack")
+                        print()
                     else:
                         if (x2, y2) in drag:
                             if (x2, y2) == bonde_kan_flytta_två_steg_hit:
