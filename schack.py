@@ -11,6 +11,8 @@ en_passant = ()
 en_passant_remove = ()
 rokad_positiv = ()
 rokad_negativ = ()
+promotion = ()
+totalt_antal_drag = 0
 
 class piece:
     def __init__(self, namn, karaktär, color, x, y):
@@ -74,6 +76,7 @@ class FlyttBeteende:
         global en_passant_remove
         global rokad_positiv
         global rokad_negativ
+        global promotion
         lista_med_flyttar = []
         if self.krav_funktion == None:
             steg = 0
@@ -104,14 +107,26 @@ class FlyttBeteende:
                 lista_med_flyttar.append((x+self.flytt_graf.x, y+self.flytt_graf.y))
                 en_passant = (x+self.flytt_graf.x, y+self.flytt_graf.y)
                 en_passant_remove = (x, y+self.flytt_graf.y)
+        elif self.krav_funktion == "promotion":
+            if self.pjäsFörälder.x + self.flytt_graf.x == 0 or self.pjäsFörälder.x + self.flytt_graf.x == 7:
+                lista_med_flyttar.append((x+self.flytt_graf.x, y+self.flytt_graf.y))
+                promotion = (x+self.flytt_graf.x, y+self.flytt_graf.y)
         elif self.krav_funktion == "rokad_positiv":
-            if self.pjäsFörälder.moves == 0 and matris[x][y+3].pjäs.moves == 0 and matris[x][y+2].pjäs == None and matris[x][y+1].pjäs == None:
-                lista_med_flyttar.append((x+self.flytt_graf.x, y+self.flytt_graf.y))
-                rokad_positiv = (x+self.flytt_graf.x, y+self.flytt_graf.y)
+            if self.pjäsFörälder.moves == 0 and matris[x][y+3].pjäs != None and matris[x][y+3].pjäs.moves == 0 and matris[x][y+2].pjäs == None and matris[x][y+1].pjäs == None:
+                matris1 = copy.deepcopy(matris)
+                flytta_pjäs(matris1, self.pjäsFörälder.x, self.pjäsFörälder.y, self.pjäsFörälder.x, self.pjäsFörälder.y+1)
+                if är_det_schack(matris1, self.pjäsFörälder.color) == False:
+                    lista_med_flyttar.append((x+self.flytt_graf.x, y+self.flytt_graf.y))
+                    rokad_positiv = (x+self.flytt_graf.x, y+self.flytt_graf.y)
         elif self.krav_funktion == "rokad_negativ":
-            if self.pjäsFörälder.moves == 0 and matris[x][y-4].pjäs.moves == 0 and matris[x][y-3].pjäs == None and matris[x][y-2].pjäs == None and matris[x][y-1].pjäs == None:
-                lista_med_flyttar.append((x+self.flytt_graf.x, y+self.flytt_graf.y))
-                rokad_negativ = (x+self.flytt_graf.x, y+self.flytt_graf.y)
+            if self.pjäsFörälder.moves == 0 and matris[x][y-4].pjäs != None and matris[x][y-4].pjäs.moves == 0 and matris[x][y-3].pjäs == None and matris[x][y-2].pjäs == None and matris[x][y-1].pjäs == None:
+                matris1 = copy.deepcopy(matris)
+                flytta_pjäs(matris1, self.pjäsFörälder.x, self.pjäsFörälder.y, self.pjäsFörälder.x, self.pjäsFörälder.y-1)
+                matris2 = copy.deepcopy(matris)
+                flytta_pjäs(matris2, self.pjäsFörälder.x, self.pjäsFörälder.y, self.pjäsFörälder.x, self.pjäsFörälder.y-2)
+                if är_det_schack(matris1, self.pjäsFörälder.color) == False and är_det_schack(matris2, self.pjäsFörälder.color):
+                    lista_med_flyttar.append((x+self.flytt_graf.x, y+self.flytt_graf.y))
+                    rokad_negativ = (x+self.flytt_graf.x, y+self.flytt_graf.y)
         return lista_med_flyttar
 
 def är_drag_på_schackbrädet(x, y):
@@ -162,6 +177,7 @@ def skapa_bonde(karaktär, färg, x, y):
         bonde.lägg_till_flytt_beteende(FlyttGraf(-1, -1, 1), "Bonde_ta_pjäs")
         bonde.lägg_till_flytt_beteende(FlyttGraf(-1, 1, 1), "En_passant")
         bonde.lägg_till_flytt_beteende(FlyttGraf(-1, -1, 1), "En_passant")
+        bonde.lägg_till_flytt_beteende(FlyttGraf(-1, 0, 1), "promotion")
     else:
         bonde.lägg_till_flytt_beteende(FlyttGraf(1, 0, 1), "Bonde_ett_steg")
         bonde.lägg_till_flytt_beteende(FlyttGraf(2, 0, 1), "Bonde_två_steg")
@@ -169,6 +185,7 @@ def skapa_bonde(karaktär, färg, x, y):
         bonde.lägg_till_flytt_beteende(FlyttGraf(1, -1, 1), "Bonde_ta_pjäs")
         bonde.lägg_till_flytt_beteende(FlyttGraf(1, 1, 1), "En_passant")
         bonde.lägg_till_flytt_beteende(FlyttGraf(1, -1, 1), "En_passant")
+        bonde.lägg_till_flytt_beteende(FlyttGraf(1, 0, 1), "promotion")
     return bonde
 
 def skapa_torn(karaktär, färg, x, y):
@@ -314,13 +331,14 @@ while match_pågår:
                     y2 = sträng_till_kolumn[flytta_till_ruta[0]]
                     schackbrädet_testa_schack = copy.deepcopy(schackbrädet)
                     flytta_pjäs(schackbrädet_testa_schack, x1, y1, x2, y2)
+                    bonde_kan_flytta_två_steg_2 = bonde_kan_flytta_två_steg_hit
                     if är_det_schack(schackbrädet_testa_schack, vems_tur):
                         print("ogiltigt drag, det är schack")
-                        print()
                     else:
                         if (x2, y2) in drag:
-                            if (x2, y2) == bonde_kan_flytta_två_steg_hit:
+                            if (x2, y2) == bonde_kan_flytta_två_steg_2:
                                 bonde_har_flyttat_två_steg_hit = (x2, y2)
+                                print("bonde två steg")
                             else:
                                 bonde_har_flyttat_två_steg_hit = ()
                             if (x2, y2) == en_passant:
@@ -331,7 +349,15 @@ while match_pågår:
                                 flytta_pjäs(schackbrädet, x2, y2+1, x2, y2-1)
                             if (x2, y2) == rokad_negativ:
                                 flytta_pjäs(schackbrädet, x2, y2-2, x2, y2+1)
+                            if (x2, y2) == promotion:
+                                if vems_tur == "vit":
+                                    schackbrädet[x2][y2].pjäs = piece("Drottning", "♛", vems_tur, x2, y2)
+                                else:
+                                     schackbrädet[x2][y2].pjäs = piece("Drottning", "♕", vems_tur, x2, y2)
+                            else:
+                                promotion = ()
                             flytta_pjäs(schackbrädet, x1, y1, x2, y2)
+                            totalt_antal_drag += 1
                             if vems_tur == "vit":
                                 vems_tur = "svart"
                             else:
@@ -343,3 +369,7 @@ while match_pågår:
     else:
         print("ruta är inte på schackbrädet")
     rita_schack_bräde(schackbrädet)
+
+#bonde kan bli till en drottning
+#det kan bli schackmatt
+#det kan bli lika
